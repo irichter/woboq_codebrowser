@@ -194,9 +194,13 @@ public:
     }
 
     virtual bool shouldSkipFunctionBody(clang::Decl *D) override {
-        return !annotator.shouldProcess(
-            clang::FullSourceLoc(D->getLocation(),annotator.getSourceMgr())
-                .getExpansionLoc().getFileID());
+        auto fsl = clang::FullSourceLoc(D->getLocation(),annotator.getSourceMgr());
+        if(!fsl.isValid()) {
+            std::cerr << "Unable to find source location (BrowserAction):" << std::endl;
+            D->print(llvm_cerr, 5);
+            return true;
+        }
+        return !annotator.shouldProcess(fsl.getExpansionLoc().getFileID());
     }
 };
 

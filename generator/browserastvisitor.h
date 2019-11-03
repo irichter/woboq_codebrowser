@@ -34,9 +34,12 @@
 #include <clang/Lex/Preprocessor.h>
 #include <clang/Basic/Version.h>
 #include <llvm/Support/SaveAndRestore.h>
+#include <llvm/Support/raw_os_ostream.h>
 
 #include <iostream>
 #include <deque>
+
+static llvm::raw_os_ostream llvm_cerr(std::cerr);
 
 struct BrowserASTVisitor : clang::RecursiveASTVisitor<BrowserASTVisitor> {
     typedef clang::RecursiveASTVisitor<BrowserASTVisitor> Base;
@@ -492,7 +495,12 @@ private:
     }
 
     bool shouldProcess(clang::NamedDecl *d) {
-        return annotator.shouldProcess(clang::FullSourceLoc(d->getLocation(),
-                            annotator.getSourceMgr()).getExpansionLoc().getFileID());
+        auto fsl = clang::FullSourceLoc(d->getLocation(), annotator.getSourceMgr());
+        if(!fsl.isValid()) {
+            std::cerr << "Unable to find source location (BrowserASTVisitor):" << std::endl;
+            d->print(llvm_cerr, 5);
+            return true;
+        }
+        return annotator.shouldProcess(fsl.getExpansionLoc().getFileID());
     }
 };
