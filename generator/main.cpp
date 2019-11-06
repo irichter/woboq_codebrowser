@@ -298,7 +298,11 @@ static bool proceedCommand(std::vector<std::string> command, llvm::StringRef Dir
 
     command.push_back("-Qunused-arguments");
     command.push_back("-Wno-unknown-warning-option");
+#if CLANG_VERSION_MAJOR < 10
     clang::tooling::ToolInvocation Inv(command, new BrowserAction(WasInDatabase), FM);
+#else
+    clang::tooling::ToolInvocation Inv(command, std::make_unique<BrowserAction>(WasInDatabase), FM);
+#endif
 
     if (!hasNoStdInc) {
       // Map the builtins includes
