@@ -428,7 +428,7 @@ int main(int argc, const char **argv) {
         }
 
         if (ProjectPaths.empty()) {
-            ProjectInfo info { llvm::sys::path::filename(DirName), DirName.str() };
+            ProjectInfo info { llvm::sys::path::filename(DirName).str(), DirName.str().str() };
             projectManager.addProject(std::move(info));
         }
 #else
@@ -486,7 +486,7 @@ int main(int argc, const char **argv) {
             // TODO: Try to find a command line for a file in the same path
             std::cerr << "Delayed " << file << "\n";
             Progress--;
-            NotInDB.push_back(filename.str());
+            NotInDB.push_back(filename.str().str());
             continue;
         }
 

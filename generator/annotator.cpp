@@ -51,6 +51,7 @@
 #include "stringbuilder.h"
 #include "projectmanager.h"
 #include "compat.h"
+#include "clang/AST/GlobalDecl.h"
 
 namespace
 {
@@ -932,13 +933,15 @@ std::pair< std::string, std::string > Annotator::getReferenceAndTitle(clang::Nam
                 //workaround crash in clang while trying to mangle some builtin types
                 && !llvm::StringRef(qualName).startswith("__")) {
             llvm::raw_string_ostream s(cached.first);
+            clang::GlobalDecl GD;
             if (llvm::isa<clang::CXXDestructorDecl>(decl)) {
-                mangle->mangleCXXDtor(llvm::cast<clang::CXXDestructorDecl>(decl), clang::Dtor_Complete, s);
+                GD = clang::GlobalDecl(llvm::cast<clang::CXXDestructorDecl>(decl), clang::Dtor_Complete);
             } else if (llvm::isa<clang::CXXConstructorDecl>(decl)) {
-                mangle->mangleCXXCtor(llvm::cast<clang::CXXConstructorDecl>(decl), clang::Ctor_Complete, s);
+                GD = clang::GlobalDecl(llvm::cast<clang::CXXConstructorDecl>(decl), clang::Ctor_Complete);
             } else {
-                mangle->mangleName(decl, s);
+                GD = clang::GlobalDecl(decl);
             }
+            mangle->mangleName(decl, s);
 
 #ifdef _WIN32
             s.flush();
@@ -965,7 +968,7 @@ std::pair< std::string, std::string > Annotator::getReferenceAndTitle(clang::Nam
             std::replace(cached.first.begin(), cached.first.end(), '>' , '}');
         }
         llvm::SmallString<64> buffer;
-        cached.second = Generator::escapeAttr(qualName, buffer);
+        cached.second = Generator::escapeAttr(qualName, buffer).str();
 
         if (cached.first.size() > 170) {
             // If the name is too big, truncate it and add the hash at the end.
