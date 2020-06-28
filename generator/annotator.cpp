@@ -51,7 +51,10 @@
 #include "stringbuilder.h"
 #include "projectmanager.h"
 #include "compat.h"
-#include "clang/AST/GlobalDecl.h"
+
+#if CLANG_VERSION_MAJOR >= 11
+#include <clang/AST/GlobalDecl.h>
+#endif
 
 namespace
 {
@@ -933,15 +936,31 @@ std::pair< std::string, std::string > Annotator::getReferenceAndTitle(clang::Nam
                 //workaround crash in clang while trying to mangle some builtin types
                 && !llvm::StringRef(qualName).startswith("__")) {
             llvm::raw_string_ostream s(cached.first);
+#if CLANG_VERSION_MAJOR >= 11
             clang::GlobalDecl GD;
+#endif
             if (llvm::isa<clang::CXXDestructorDecl>(decl)) {
+#if CLANG_VERSION_MAJOR >= 11
                 GD = clang::GlobalDecl(llvm::cast<clang::CXXDestructorDecl>(decl), clang::Dtor_Complete);
+#else
+                mangle->mangleCXXDtor(llvm::cast<clang::CXXDestructorDecl>(decl), clang::Dtor_Complete, s);
+#endif
             } else if (llvm::isa<clang::CXXConstructorDecl>(decl)) {
+#if CLANG_VERSION_MAJOR >= 11
                 GD = clang::GlobalDecl(llvm::cast<clang::CXXConstructorDecl>(decl), clang::Ctor_Complete);
+#else
+                mangle->mangleCXXCtor(llvm::cast<clang::CXXConstructorDecl>(decl), clang::Ctor_Complete, s);
+#endif
             } else {
+#if CLANG_VERSION_MAJOR >= 11
                 GD = clang::GlobalDecl(decl);
+#else
+                mangle->mangleName(decl, s);
+#endif
             }
+#if CLANG_VERSION_MAJOR >= 11
             mangle->mangleName(decl, s);
+#endif
 
 #ifdef _WIN32
             s.flush();
